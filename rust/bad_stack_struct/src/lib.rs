@@ -31,19 +31,18 @@ impl Head {
         Self { next: None }
     }
     pub fn insert(&mut self, value: i32) {
-        if self.next.is_none() {
-            self.next = Some(Box::from(Node::new(value)));
-        } else{
-            let mut prev: &mut Box<Node> = self.next.as_mut().unwrap();
+        if let Some(mut prev) = self.next.as_mut() {
             'looper: loop {
-                    // cannot call a method since it will take a &mut ref  another time.
-                    if let Some(ref mut v) = prev.next {
-                        prev = v;
-                    } else {
-                        prev.set_next(Node::new(value));
-                        break 'looper;
-                    }
+                // cannot call a method since it will take a &mut ref  another time.
+                if let Some(ref mut v) = prev.next {
+                    prev = v;
+                } else {
+                    prev.next = Some(Box::from(Node::new(value)));
+                    break 'looper;
+                }
             }
+        } else {
+            self.next = Some(Box::from(Node::new(value)));
         }
     }
 }

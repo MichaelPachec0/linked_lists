@@ -45,6 +45,23 @@ impl Head {
             self.next = Some(Box::from(Node::new(value)));
         }
     }
+    pub fn search(&self, value:i32) -> Option<usize> {
+        let mut location = 0;
+        if let Some(mut prev) = self.next.as_ref() {
+            'looper: loop {
+                if prev.value == value {
+                    return Some(location);
+                } else if let Some(ref v) = prev.next {
+                    location += 1;
+                    prev = v;
+                } else {
+                    return None;
+                }
+            }
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -60,5 +77,10 @@ mod tests {
             head.insert(value);
         }
         println!("{head:?}");
+        if let Some(val)  = head.search(5) {
+            println!("Found value {val}");
+        } else {
+            println!("Found NOTHING");
+        }
     }
 }

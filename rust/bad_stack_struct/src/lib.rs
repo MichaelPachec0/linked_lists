@@ -55,12 +55,11 @@ impl Head {
                     location += 1;
                     prev = v;
                 } else {
-                    return None;
+                    break 'looper;
                 }
             }
-        } else {
-            None
         }
+        None
     }
     pub fn split_at(&mut self, where_at: usize) -> Result<Head, liberr::Err> {
         let mut loc: usize = 1;
@@ -73,12 +72,16 @@ impl Head {
                 head.next = take;
                 return Ok(head);
             } else if loc == where_at {
-                let mut take = None;
-                if let Some(node ) = item {
-                    take = core::mem::take(&mut node.next);
-                } else {
-                    return Err(liberr::Err::new("NOTHING HERE CHIEF".to_owned(), line!()));
-                }
+                let take = match item {
+                    Some(node) => {
+                        if node.next.is_some() {
+                            core::mem::take(&mut node.next)
+                        } else {
+                            return Err(liberr::Err::new("NOTHING HERE CHIEF".to_owned(), line!()));
+                        }
+                    }
+                    None => return Err(liberr::Err::new("NOTHING HERE CHIEF".to_owned(), line!())),
+                };
                 let mut head = Head::new();
                 head.next = take;
                 return Ok(head);
@@ -86,7 +89,10 @@ impl Head {
                 loc += 1;
                 item = node.next.as_mut();
             } else {
-                return Err(liberr::Err::new("NO NODE AT LOCATION {where_at} FOUND".to_owned(), line!()));
+                return Err(liberr::Err::new(
+                    "NO NODE AT LOCATION {where_at} FOUND".to_owned(),
+                    line!(),
+                ));
             }
         }
     }

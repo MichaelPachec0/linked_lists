@@ -219,9 +219,15 @@ mod tests {
         if let Some(&expected) = expected {
             if let Some(actual) = actual {
                 let actual_val = actual.value;
-                assert_eq!(actual.value, expected, "SHOULD HAVE GOT VALUE {expected} GOT {actual_val}. NODE {actual:?}");
+                assert_eq!(
+                    actual.value, expected,
+                    "SHOULD HAVE GOT VALUE {expected} GOT {actual_val}. NODE {actual:?}"
+                );
             } else {
-                assert!(actual.is_some(), "NO VALUE GIVEN BY POP(), SHOULD HAVE VALUE {expected}");
+                assert!(
+                    actual.is_some(),
+                    "NO VALUE GIVEN BY POP(), SHOULD HAVE VALUE {expected}"
+                );
             }
         } else {
             unreachable!()

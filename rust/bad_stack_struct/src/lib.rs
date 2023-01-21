@@ -166,7 +166,11 @@ impl List {
 #[cfg(test)]
 mod tests {
     #![allow(clippy::use_debug)]
+
     use super::*;
+    use rand::Rng;
+    use core::ops::Range;
+
     const VALS: [i32; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
     fn get_list() -> List {
@@ -260,5 +264,31 @@ mod tests {
         } else {
             unreachable!()
         }
+    }
+    #[test]
+    fn insert() {
+        let mut rng = rand::thread_rng();
+        let mut list = get_list();
+        let vec = (0..40)
+            .into_iter()
+            .map(|_| rng.gen::<i32>())
+            .collect::<Vec<i32>>();
+        for (i, &item) in vec.iter().enumerate() {
+            let loc = rng.gen_range::<usize, Range<usize>>(0..list.len());
+            println!("INSERTING {} of {} {item} AT {loc}", i + 1, vec.len());
+            list.insert(item, loc);
+            let actual_loc = match list.search(item) {
+                Some(loc) => loc,
+                None => unreachable!(),
+            };
+            assert_eq!(loc, actual_loc, "INSERTION LOCATION IS WRONG LIST {list:?}");
+        }
+        let expected_len = VALS.len() + vec.len();
+        let actual_len = list.len();
+        println!("{list:?}");
+        assert_eq!(
+            expected_len, actual_len,
+            "EXPECTED LENGTH {expected_len} DOES NOT EQUAL LIST LENGTH {actual_len}"
+        );
     }
 }

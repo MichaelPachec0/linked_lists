@@ -106,6 +106,35 @@ impl List {
             }
         }
     }
+    #[inline]
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.next.is_none()
+    }
+    #[must_use]
+    pub fn len(&self) -> usize {
+        if self.is_empty() {
+            return 0;
+        }
+        let mut len = 0;
+        let mut wrapped_item = self.next.as_ref();
+        loop {
+            if let Some(unwrapped_item) = wrapped_item {
+                len += 1;
+                if let Some(_) = &unwrapped_item.next {
+                    wrapped_item = unwrapped_item.next.as_ref();
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        len
+    }
+    pub fn pop(&mut self) -> Option<Node> {
+        None
+    }
 }
 
 #[cfg(test)]

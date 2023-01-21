@@ -1,4 +1,9 @@
-#![allow(clippy::missing_docs_in_private_items)]
+#![allow(
+    clippy::missing_docs_in_private_items,
+    clippy::missing_errors_doc,
+    clippy::new_without_default,
+    clippy::missing_inline_in_public_items
+)]
 
 #[derive(Debug, Default)]
 struct Node {

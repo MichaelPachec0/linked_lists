@@ -96,17 +96,9 @@ impl List {
         }
         let mut len = 0;
         let mut wrapped_item = self.next.as_ref();
-        loop {
-            if let Some(unwrapped_item) = wrapped_item {
-                len += 1;
-                if let Some(_) = &unwrapped_item.next {
-                    wrapped_item = unwrapped_item.next.as_ref();
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
+        while let Some(unwrapped_item) = wrapped_item {
+            len += 1;
+            wrapped_item = unwrapped_item.next.as_ref();
         }
         len
     }

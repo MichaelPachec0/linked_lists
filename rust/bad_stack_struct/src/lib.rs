@@ -61,12 +61,14 @@ impl Head {
         }
         None
     }
-    pub fn split_at(&mut self, where_at: usize) -> Result<Head, liberr::Err> {
+    pub fn split_at(&mut self, where_at: usize) -> Result<List, liberr::Err> {
+        // loc variable needs to be 1, as we are already checking for where_at is at the 0th index.
+        // this means we automatically skip when `loc` should be 0.
         let mut loc: usize = 1;
-        // first need to check if it wants the first item;
         let mut item = self.next.as_mut();
         loop {
             if where_at == 0 {
+                // Special case where we want to take the whole list. Leaves Head empty
                 let take = core::mem::take(&mut self.next);
                 let mut head = Head::new();
                 head.next = take;
@@ -100,8 +102,15 @@ impl Head {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::use_debug)]
     use super::*;
-    const VALS: [i32; 5] = [1, 2, 3, 4, 5];
+    const VALS: [i32; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+    fn get_list() -> List {
+        let mut list = List::new();
+        VALS.iter().for_each(|&val| list.insert(val));
+        list
+    }
 
     #[test]
     fn it_works() -> Result<(), liberr::Err> {
@@ -119,6 +128,20 @@ mod tests {
         let new_head = head.split_at(2)?;
         println!("{new_head:?}");
         println!("{head:?}");
+    }
+    #[test]
+    fn split() -> Result<(), liberr::Err> {
+        let split_loc = 3;
+        let initial_len = VALS.len();
+        let mut list = get_list();
+        let new_list = list.split_at(split_loc)?;
+        assert!(!new_list.is_empty(), "NEW LIST SHOULD NOT BE EMPTY.");
+        let len_new_actual = new_list.len();
+        let len_new_expected = initial_len - split_loc;
+        let len_old_expected = split_loc;
+        let len_old_actual = list.len();
+        assert_eq!(len_new_expected, len_new_actual, "NEW LIST WAS NOT SPLIT IN THE RIGHT LOCATION.\n NEW LIST SHOULD HAVE LENGTH {len_new_expected} HAS {len_new_actual}");
+        assert_eq!(len_old_expected, len_old_actual, "OLD LIST WAS NOT SPLIT IN THE RIGHT LOCATION.\n OLD LIST SHOULD HAVE LENGTH {len_old_expected} HAS {len_old_actual}");
         Ok(())
     }
 }

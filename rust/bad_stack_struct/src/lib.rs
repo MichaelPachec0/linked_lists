@@ -6,12 +6,13 @@
 )]
 
 #[derive(Debug, Default)]
-struct Node {
+pub struct Node {
     value: i32,
     next: Option<Box<Node>>,
 }
 
 impl Node {
+    #[must_use]
     pub fn new(value: i32) -> Self {
         Self { value, next: None }
     }
@@ -51,7 +52,8 @@ impl List {
             self.next = Some(Box::from(Node::new(value)));
         }
     }
-    pub fn search(&self, value:i32) -> Option<usize> {
+    #[must_use]
+    pub fn search(&self, value: i32) -> Option<usize> {
         let mut location = 0;
         if let Some(mut prev) = self.next.as_ref() {
             'looper: loop {

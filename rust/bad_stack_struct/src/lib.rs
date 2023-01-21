@@ -72,15 +72,17 @@ impl List {
     pub fn split_off(&mut self, at: usize) -> Option<List> {
         // TODO: Decide if split should return an empty list when Original list is empty or
         //  where_at > len or return None
-        if self.is_empty() {
-            return None;
-        }
-        let mut list = List::new();
-        let node = self.split_off_raw(at);
-        node.is_some().then(|| {
-            list.next = node;
-            list
-        })
+        self.next
+            .is_some()
+            .then(|| {
+                let node = self.split_off_raw(at);
+                node.is_some().then(|| {
+                    let mut list = List::new();
+                    list.next = node;
+                    list
+                })
+            })
+            .unwrap_or(None)
     }
     #[inline]
     #[must_use]

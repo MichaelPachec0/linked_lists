@@ -37,19 +37,25 @@ impl List {
     pub fn new() -> Self {
         Self { next: None }
     }
-    pub fn insert(&mut self, value: i32) {
-        if let Some(mut prev) = self.next.as_mut() {
-            'looper: loop {
-                // cannot call a method since it will take a &mut ref  another time.
-                if let Some(ref mut v) = prev.next {
-                    prev = v;
-                } else {
-                    prev.next = Some(Box::from(Node::new(value)));
-                    break 'looper;
-                }
-            }
+    pub fn push(&mut self, value: i32) {
+        let last = self.len();
+        self.insert(value, last);
+    }
+    pub fn insert(&mut self, value: i32, at: usize) {
+        if at == 0 {
+            let dangling_wrp_node = self.split_off_raw(0);
+            let mut node = Box::from(Node::new(value));
+            node.next = dangling_wrp_node;
+            self.next = Some(node);
         } else {
-            self.next = Some(Box::from(Node::new(value)));
+            // TODO: Need to handle cases where at > len
+            let loc = at - 1;
+            let wrp_prev_node = self.get_mut_ref(loc);
+            if let Some(prev_node) = wrp_prev_node {
+                let mut node = Box::from(Node::new(value));
+                node.next = core::mem::take(&mut prev_node.next);
+                prev_node.next = Some(node);
+            }
         }
     }
     #[must_use]
@@ -138,6 +144,23 @@ impl List {
         }
         None
     }
+    pub fn get_mut_ref(&mut self, at: usize) -> Option<&mut Box<Node>> {
+        let mut loc = 0;
+        // let mut wrp_node = self.next.as_ref();
+        if let Some(mut node) = self.next.as_mut() {
+            loop {
+                if loc == at {
+                    return Some(node);
+                } else if let Some(ref mut new_node) = node.next {
+                    loc += 1;
+                    node = new_node;
+                } else {
+                    break;
+                }
+            }
+        }
+        None
+    }
 }
 
 #[cfg(test)]
@@ -148,7 +171,7 @@ mod tests {
 
     fn get_list() -> List {
         let mut list = List::new();
-        VALS.iter().for_each(|&val| list.insert(val));
+        VALS.iter().for_each(|&val| list.push(val));
         list
     }
 
@@ -157,7 +180,7 @@ mod tests {
         let _list = List::new();
     }
     #[test]
-    fn insert_list() {
+    fn push_list() {
         let mut list = List::new();
         // let len = VALS.len();
         for (i, &value) in VALS.iter().enumerate() {
@@ -166,7 +189,7 @@ mod tests {
                 i + 1,
                 VALS.len()
             );
-            list.insert(value);
+            list.push(value);
         }
         println!("{list:?}");
     }
@@ -195,7 +218,7 @@ mod tests {
             assert!(actual.is_some(), "SEARCH IS NOT WORKING! SHOULD HAVE FOUND VALUE {val} IN DATA STRUCTURE {list:?}");
             // Already made sure that actual has a value, if actual was `None` then the above would panic
             let actual_loc = actual.unwrap();
-            assert_eq!(actual_loc , i, "WRONG LOCATION, SHOULD HAVA FOUND VALUE {val} IN LOCATION {i} FOUND IN {actual_loc}");
+            assert_eq!(actual_loc , i, "WRONG LOCATION, SHOULD HAVA FOUND VALUE {val} IN LOCATION {i} FOUND IN {actual_loc}, STRUCTURE: {list:?}");
         });
     }
     #[test]

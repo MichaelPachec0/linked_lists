@@ -111,12 +111,13 @@ impl List {
         len
     }
     pub fn pop(&mut self) -> Option<Box<Node>> {
-        if self.is_empty() {
-            None
-        } else {
-            let last_loc = self.len();
-            self.split_off_raw(last_loc - 1)
-        }
+        self.next
+            .is_some()
+            .then(|| {
+                let last_loc = self.len();
+                self.split_off_raw(last_loc - 1)
+            })
+            .unwrap_or_default()
     }
     pub fn split_off_raw(&mut self, at: usize) -> Option<Box<Node>> {
         // loc variable needs to be 1, as we are already checking for where_at is at the 0th index.

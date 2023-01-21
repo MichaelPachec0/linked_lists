@@ -69,42 +69,18 @@ impl List {
         }
         None
     }
-    pub fn split_at(&mut self, where_at: usize) -> Result<List, liberr::Err> {
-        // loc variable needs to be 1, as we are already checking for where_at is at the 0th index.
-        // this means we automatically skip when `loc` should be 0.
-        let mut loc: usize = 1;
-        let mut item = self.next.as_mut();
-        loop {
-            if where_at == 0 {
-                // Special case where we want to take the whole list. Leaves Head empty
-                let take = core::mem::take(&mut self.next);
-                let mut list = List::new();
-                list.next = take;
-                return Ok(list);
-            } else if loc == where_at {
-                let take = match item {
-                    Some(node) => {
-                        if node.next.is_some() {
-                            core::mem::take(&mut node.next)
-                        } else {
-                            return Err(liberr::Err::new("NOTHING HERE CHIEF".to_owned(), line!()));
-                        }
-                    }
-                    None => return Err(liberr::Err::new("NOTHING HERE CHIEF".to_owned(), line!())),
-                };
-                let mut list = List::new();
-                list.next = take;
-                return Ok(list);
-            } else if let Some(node) = item {
-                loc += 1;
-                item = node.next.as_mut();
-            } else {
-                return Err(liberr::Err::new(
-                    "NO NODE AT LOCATION {where_at} FOUND".to_owned(),
-                    line!(),
-                ));
-            }
+    pub fn split_off(&mut self, at: usize) -> Option<List> {
+        // TODO: Decide if split should return an empty list when Original list is empty or
+        //  where_at > len or return None
+        if self.is_empty() {
+            return None;
         }
+        let mut list = List::new();
+        let node = self.split_off_raw(at);
+        node.is_some().then(|| {
+            list.next = node;
+            list
+        })
     }
     #[inline]
     #[must_use]
@@ -132,7 +108,39 @@ impl List {
         }
         len
     }
-    pub fn pop(&mut self) -> Option<Node> {
+    pub fn pop(&mut self) -> Option<Box<Node>> {
+        if self.is_empty() {
+            None
+        } else {
+            let last_loc = self.len();
+            self.split_off_raw(last_loc - 1)
+        }
+    }
+    pub fn split_off_raw(&mut self, at: usize) -> Option<Box<Node>> {
+        // loc variable needs to be 1, as we are already checking for where_at is at the 0th index.
+        // this means we automatically skip when `loc` should be 0.
+        let mut loc = 1;
+        let mut wrapped_node = self.next.as_mut();
+        loop {
+            if at == 0 || loc == at {
+                let take = match at {
+                    0 => core::mem::take(&mut self.next),
+                    _ => {
+                        if let Some(node) = wrapped_node {
+                            core::mem::take(&mut node.next)
+                        } else {
+                            break;
+                        }
+                    }
+                };
+                return take;
+            } else if let Some(node) = wrapped_node {
+                loc += 1;
+                wrapped_node = node.next.as_mut();
+            } else {
+                break;
+            }
+        }
         None
     }
 }
@@ -168,19 +176,21 @@ mod tests {
         println!("{list:?}");
     }
     #[test]
-    fn split() -> Result<(), liberr::Err> {
+    fn split() {
         let split_loc = 3;
         let initial_len = VALS.len();
         let mut list = get_list();
-        let new_list = list.split_at(split_loc)?;
-        assert!(!new_list.is_empty(), "NEW LIST SHOULD NOT BE EMPTY.");
-        let len_new_actual = new_list.len();
-        let len_new_expected = initial_len - split_loc;
-        let len_old_expected = split_loc;
-        let len_old_actual = list.len();
-        assert_eq!(len_new_expected, len_new_actual, "NEW LIST WAS NOT SPLIT IN THE RIGHT LOCATION.\n NEW LIST SHOULD HAVE LENGTH {len_new_expected} HAS {len_new_actual}");
-        assert_eq!(len_old_expected, len_old_actual, "OLD LIST WAS NOT SPLIT IN THE RIGHT LOCATION.\n OLD LIST SHOULD HAVE LENGTH {len_old_expected} HAS {len_old_actual}");
-        Ok(())
+        let new_list = list.split_off(split_loc);
+        if let Some(new_list) = new_list {
+            let len_new_actual = new_list.len();
+            let len_new_expected = initial_len - split_loc;
+            let len_old_expected = split_loc;
+            let len_old_actual = list.len();
+            assert_eq!(len_new_expected, len_new_actual, "NEW LIST WAS NOT SPLIT IN THE RIGHT LOCATION.\n NEW LIST SHOULD HAVE LENGTH {len_new_expected} HAS {len_new_actual}");
+            assert_eq!(len_old_expected, len_old_actual, "OLD LIST WAS NOT SPLIT IN THE RIGHT LOCATION.\n OLD LIST SHOULD HAVE LENGTH {len_old_expected} HAS {len_old_actual}");
+        } else {
+            assert!(new_list.is_none(), "NEW LIST SHOULD NOT BE EMPTY.");
+        }
     }
     #[test]
     fn search() {

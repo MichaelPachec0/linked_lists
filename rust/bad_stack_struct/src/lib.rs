@@ -82,7 +82,7 @@ impl List {
                     list
                 })
             })
-            .unwrap_or(None)
+            .unwrap_or_default()
     }
     #[inline]
     #[must_use]

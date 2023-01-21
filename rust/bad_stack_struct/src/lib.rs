@@ -27,11 +27,12 @@ impl Node {
 }
 
 #[derive(Debug)]
-struct Head {
+pub struct List {
     next: Option<Box<Node>>,
 }
 
-impl Head {
+impl List {
+    #[must_use]
     pub fn new() -> Self {
         Self { next: None }
     }
@@ -75,9 +76,9 @@ impl Head {
             if where_at == 0 {
                 // Special case where we want to take the whole list. Leaves Head empty
                 let take = core::mem::take(&mut self.next);
-                let mut head = Head::new();
-                head.next = take;
-                return Ok(head);
+                let mut list = List::new();
+                list.next = take;
+                return Ok(list);
             } else if loc == where_at {
                 let take = match item {
                     Some(node) => {
@@ -89,9 +90,9 @@ impl Head {
                     }
                     None => return Err(liberr::Err::new("NOTHING HERE CHIEF".to_owned(), line!())),
                 };
-                let mut head = Head::new();
-                head.next = take;
-                return Ok(head);
+                let mut list = List::new();
+                list.next = take;
+                return Ok(list);
             } else if let Some(node) = item {
                 loc += 1;
                 item = node.next.as_mut();
@@ -118,21 +119,22 @@ mod tests {
     }
 
     #[test]
-    fn it_works() -> Result<(), liberr::Err> {
-        let mut head = Head::new();
-        let tmp: Option<&Box<Node>> = None;
+    fn create_list() {
+        let _list = List::new();
+    }
+    #[test]
+    fn insert_list() {
+        let mut list = List::new();
+        // let len = VALS.len();
         for (i, &value) in VALS.iter().enumerate() {
-            head.insert(value);
+            println!(
+                "INSERTING {} OF {} VALUES, VAL: {value} ",
+                i + 1,
+                VALS.len()
+            );
+            list.insert(value);
         }
-        println!("{head:?}");
-        if let Some(val)  = head.search(5) {
-            println!("Found value {val}");
-        } else {
-            println!("Found NOTHING");
-        }
-        let new_head = head.split_at(2)?;
-        println!("{new_head:?}");
-        println!("{head:?}");
+        println!("{list:?}");
     }
     #[test]
     fn split() -> Result<(), liberr::Err> {
@@ -148,5 +150,50 @@ mod tests {
         assert_eq!(len_new_expected, len_new_actual, "NEW LIST WAS NOT SPLIT IN THE RIGHT LOCATION.\n NEW LIST SHOULD HAVE LENGTH {len_new_expected} HAS {len_new_actual}");
         assert_eq!(len_old_expected, len_old_actual, "OLD LIST WAS NOT SPLIT IN THE RIGHT LOCATION.\n OLD LIST SHOULD HAVE LENGTH {len_old_expected} HAS {len_old_actual}");
         Ok(())
+    }
+    #[test]
+    fn search() {
+        let list = get_list();
+        VALS.iter().enumerate().for_each(|(i, &val)| {
+            let actual = list.search(val);
+            assert!(actual.is_some(), "SEARCH IS NOT WORKING! SHOULD HAVE FOUND VALUE {val} IN DATA STRUCTURE {list:?}");
+            // Already made sure that actual has a value, if actual was `None` then the above would panic
+            let actual_loc = actual.unwrap();
+            assert_eq!(actual_loc , i, "WRONG LOCATION, SHOULD HAVA FOUND VALUE {val} IN LOCATION {i} FOUND IN {actual_loc}");
+        });
+    }
+    #[test]
+    fn test_len() {
+        let list = get_list();
+        let expected = VALS.len();
+        let actual = list.len();
+        assert_eq!(
+            actual, expected,
+            "EXPECTED {expected} DOES NOT MATCH LIST's ACTUAL {actual} LENGTH"
+        );
+    }
+    #[test]
+    fn test_empty() {
+        let list = List::new();
+        assert!(
+            list.is_empty(),
+            "NEW LIST SHOULD BE RETURN WHEN CALLING IS_EMPTY. LIST {list:?}"
+        );
+    }
+    #[test]
+    fn test_pop() {
+        let mut list = get_list();
+        let actual = list.pop();
+        let expected = VALS.last();
+        if let Some(&expected) = expected {
+            if let Some(actual) = actual {
+                let actual_val = actual.value;
+                assert_eq!(actual.value, expected, "SHOULD HAVE GOT VALUE {expected} GOT {actual_val}. NODE {actual:?}");
+            } else {
+                assert!(actual.is_some(), "NO VALUE GIVEN BY POP(), SHOULD HAVE VALUE {expected}");
+            }
+        } else {
+            unreachable!()
+        }
     }
 }

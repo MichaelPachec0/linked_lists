@@ -38,8 +38,7 @@ impl List {
         Self { next: None }
     }
     pub fn push(&mut self, value: i32) {
-        let last = self.len();
-        self.insert(value, last);
+        self.insert(value, 0);
     }
     pub fn insert(&mut self, value: i32, at: usize) {
         if at == 0 {
@@ -109,6 +108,17 @@ impl List {
         len
     }
     pub fn pop(&mut self) -> Option<Box<Node>> {
+        self.next.is_some().then(|| {
+            match core::mem::take(&mut self.next) {
+                Some(mut node) => {
+                    self.next = core::mem::take(&mut node.next);
+                    node
+                },
+                None => unreachable!()
+            }
+        })
+    }
+    pub fn rpop(&mut self) -> Option<Box<Node>> {
         self.next
             .is_some()
             .then(|| {
@@ -117,7 +127,7 @@ impl List {
             })
             .unwrap_or_default()
     }
-    pub fn split_off_raw(&mut self, at: usize) -> Option<Box<Node>> {
+    fn split_off_raw(&mut self, at: usize) -> Option<Box<Node>> {
         // loc variable needs to be 1, as we are already checking for where_at is at the 0th index.
         // this means we automatically skip when `loc` should be 0.
         let mut loc = 1;
@@ -144,7 +154,7 @@ impl List {
         }
         None
     }
-    pub fn get_mut_ref(&mut self, at: usize) -> Option<&mut Box<Node>> {
+    fn get_mut_ref(&mut self, at: usize) -> Option<&mut Box<Node>> {
         let mut loc = 0;
         // let mut wrp_node = self.next.as_ref();
         if let Some(mut node) = self.next.as_mut() {
@@ -217,7 +227,7 @@ mod tests {
     #[test]
     fn search() {
         let list = get_list();
-        VALS.iter().enumerate().for_each(|(i, &val)| {
+        VALS.iter().rev().enumerate().for_each(|(i, &val)| {
             let actual = list.search(val);
             assert!(actual.is_some(), "SEARCH IS NOT WORKING! SHOULD HAVE FOUND VALUE {val} IN DATA STRUCTURE {list:?}");
             // Already made sure that actual has a value, if actual was `None` then the above would panic
@@ -274,7 +284,7 @@ mod tests {
             .map(|_| rng.gen::<i32>())
             .collect::<Vec<i32>>();
         for (i, &item) in vec.iter().enumerate() {
-            let loc = rng.gen_range::<usize, Range<usize>>(0..list.len());
+            let loc = rng.gen_range::<usize, Range<usize>>(0..list.len()+1);
             println!("INSERTING {} of {} {item} AT {loc}", i + 1, vec.len());
             list.insert(item, loc);
             let actual_loc = match list.search(item) {

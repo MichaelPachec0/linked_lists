@@ -108,29 +108,27 @@ impl List {
         len
     }
     pub fn pop(&mut self) -> Option<i32> {
-        self.next.is_some().then(|| {
-            match core::mem::take(&mut self.next) {
+        self.next
+            .is_some()
+            .then(|| match core::mem::take(&mut self.next) {
                 Some(mut node) => {
                     self.next = core::mem::take(&mut node.next);
                     node.value
-                },
-                None => unreachable!()
-            }
-        })
+                }
+                None => unreachable!(),
+            })
     }
     pub fn rpop(&mut self) -> Option<i32> {
-        self.next
-            .is_some()
-            .then(|| {
-                let last_loc = self.len();
-                let node = self.split_off_raw(last_loc - 1);
-                if let Some(node) = node {
-                    node.value
-                } else {
-                    // impossible to reach since is_some() makes sure we have a Some(T)
-                    unreachable!()
-                }
-            })
+        self.next.is_some().then(|| {
+            let last_loc = self.len();
+            let node = self.split_off_raw(last_loc - 1);
+            if let Some(node) = node {
+                node.value
+            } else {
+                // impossible to reach since is_some() makes sure we have a Some(T)
+                unreachable!()
+            }
+        })
     }
     fn split_off_raw(&mut self, at: usize) -> Option<Box<Node>> {
         // loc variable needs to be 1, as we are already checking for where_at is at the 0th index.
@@ -176,25 +174,29 @@ impl List {
         }
         None
     }
+    fn pop_node(&mut self) -> Option<Box<Node>> {
+        let wrapped = core::mem::take(&mut self.next);
+        wrapped.is_some().then(|| {
+            let mut node = wrapped.unwrap();
+            self.next = core::mem::take(&mut node.next);
+            node
+        })
+    }
 }
 
 impl Drop for List {
     fn drop(&mut self) {
-        let mut wrapped_node = core::mem::take(&mut self.next);
-        while let Some(mut node) = wrapped_node {
-            wrapped_node = core::mem::take(&mut node.next);
-        }
+        while let Some(mut _node) = self.pop_node() {}
     }
 }
-
 
 #[cfg(test)]
 mod tests {
     #![allow(clippy::use_debug)]
 
     use super::*;
-    use rand::Rng;
     use core::ops::Range;
+    use rand::Rng;
 
     const VALS: [i32; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -298,7 +300,7 @@ mod tests {
             .map(|_| rng.gen::<i32>())
             .collect::<Vec<i32>>();
         for (i, &item) in vec.iter().enumerate() {
-            let loc = rng.gen_range::<usize, Range<usize>>(0..list.len()+1);
+            let loc = rng.gen_range::<usize, Range<usize>>(0..list.len() + 1);
             println!("INSERTING {} of {} {item} AT {loc}", i + 1, vec.len());
             list.insert(item, loc);
             let actual_loc = match list.search(item) {

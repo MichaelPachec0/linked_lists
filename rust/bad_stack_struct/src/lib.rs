@@ -107,25 +107,30 @@ impl List {
         }
         len
     }
-    pub fn pop(&mut self) -> Option<Box<Node>> {
+    pub fn pop(&mut self) -> Option<i32> {
         self.next.is_some().then(|| {
             match core::mem::take(&mut self.next) {
                 Some(mut node) => {
                     self.next = core::mem::take(&mut node.next);
-                    node
+                    node.value
                 },
                 None => unreachable!()
             }
         })
     }
-    pub fn rpop(&mut self) -> Option<Box<Node>> {
+    pub fn rpop(&mut self) -> Option<i32> {
         self.next
             .is_some()
             .then(|| {
                 let last_loc = self.len();
-                self.split_off_raw(last_loc - 1)
+                let node = self.split_off_raw(last_loc - 1);
+                if let Some(node) = node {
+                    node.value
+                } else {
+                    // impossible to reach since is_some() makes sure we have a Some(T)
+                    unreachable!()
+                }
             })
-            .unwrap_or_default()
     }
     fn split_off_raw(&mut self, at: usize) -> Option<Box<Node>> {
         // loc variable needs to be 1, as we are already checking for where_at is at the 0th index.
@@ -260,10 +265,9 @@ mod tests {
         let expected = VALS.last();
         if let Some(&expected) = expected {
             if let Some(actual) = actual {
-                let actual_val = actual.value;
                 assert_eq!(
-                    actual.value, expected,
-                    "SHOULD HAVE GOT VALUE {expected} GOT {actual_val}. NODE {actual:?}"
+                    actual, expected,
+                    "SHOULD HAVE GOT VALUE {expected} GOT {actual}."
                 );
             } else {
                 assert!(

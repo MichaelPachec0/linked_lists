@@ -178,6 +178,16 @@ impl List {
     }
 }
 
+impl Drop for List {
+    fn drop(&mut self) {
+        let mut wrapped_node = core::mem::take(&mut self.next);
+        while let Some(mut node) = wrapped_node {
+            wrapped_node = core::mem::take(&mut node.next);
+        }
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::use_debug)]

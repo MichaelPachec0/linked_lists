@@ -6,41 +6,41 @@
 )]
 
 #[derive(Debug, Default)]
-pub struct Node {
-    value: i32,
-    next: Option<Box<Node>>,
+pub struct Node<T> {
+    value: T,
+    next: Option<Box<Node<T>>>,
 }
 
-impl Node {
+impl<T> Node<T> {
     #[must_use]
-    pub fn new(value: i32) -> Self {
+    pub fn new(value: T) -> Self {
         Self { value, next: None }
     }
-    pub fn set_next(&mut self, node: Node) {
+    pub fn set_next(&mut self, node: Node<T>) {
         self.next = Some(Box::from(node));
     }
-    pub fn get_value(&self) -> &i32 {
+    pub fn get_value(&self) -> &T {
         &self.value
     }
-    pub fn get_next(&mut self) -> Option<&mut Box<Node>> {
+    pub fn get_next(&mut self) -> Option<&mut Box<Node<T>>> {
         self.next.as_mut()
     }
 }
 
 #[derive(Debug)]
-pub struct List {
-    next: Option<Box<Node>>,
+pub struct List<T> {
+    next: Option<Box<Node<T>>>,
 }
 
-impl List {
+impl<T> List<T> {
     #[must_use]
     pub fn new() -> Self {
         Self { next: None }
     }
-    pub fn push(&mut self, value: i32) {
+    pub fn push(&mut self, value: T) {
         self.insert(value, 0);
     }
-    pub fn insert(&mut self, value: i32, at: usize) {
+    pub fn insert(&mut self, value: T, at: usize) {
         if at == 0 {
             let dangling_wrp_node = self.split_off_raw(0);
             let mut node = Box::from(Node::new(value));
@@ -58,7 +58,7 @@ impl List {
         }
     }
     #[must_use]
-    pub fn search(&self, value: i32) -> Option<usize> {
+    pub fn search(&self, value: T) -> Option<usize> where T: PartialOrd {
         let mut location = 0;
         if let Some(mut prev) = self.next.as_ref() {
             'looper: loop {
@@ -74,7 +74,7 @@ impl List {
         }
         None
     }
-    pub fn split_off(&mut self, at: usize) -> Option<List> {
+    pub fn split_off(&mut self, at: usize) -> Option<List<T>> {
         // TODO: Decide if split should return an empty list when Original list is empty or
         //  where_at > len or return None
         self.next
@@ -107,7 +107,7 @@ impl List {
         }
         len
     }
-    pub fn pop(&mut self) -> Option<i32> {
+    pub fn pop(&mut self) -> Option<T> {
         self.next
             .is_some()
             .then(|| match core::mem::take(&mut self.next) {
@@ -118,7 +118,7 @@ impl List {
                 None => unreachable!(),
             })
     }
-    pub fn rpop(&mut self) -> Option<i32> {
+    pub fn rpop(&mut self) -> Option<T> {
         self.next.is_some().then(|| {
             let last_loc = self.len();
             let node = self.split_off_raw(last_loc - 1);
@@ -130,7 +130,7 @@ impl List {
             }
         })
     }
-    fn split_off_raw(&mut self, at: usize) -> Option<Box<Node>> {
+    fn split_off_raw(&mut self, at: usize) -> Option<Box<Node<T>>> {
         // loc variable needs to be 1, as we are already checking for where_at is at the 0th index.
         // this means we automatically skip when `loc` should be 0.
         let mut loc = 1;
@@ -157,7 +157,7 @@ impl List {
         }
         None
     }
-    fn get_mut_ref(&mut self, at: usize) -> Option<&mut Box<Node>> {
+    fn get_mut_ref(&mut self, at: usize) -> Option<&mut Box<Node<T>>> {
         let mut loc = 0;
         // let mut wrp_node = self.next.as_ref();
         if let Some(mut node) = self.next.as_mut() {
@@ -174,7 +174,7 @@ impl List {
         }
         None
     }
-    fn pop_node(&mut self) -> Option<Box<Node>> {
+    fn pop_node(&mut self) -> Option<Box<Node<T>>> {
         let wrapped = core::mem::take(&mut self.next);
         wrapped.is_some().then(|| {
             let mut node = wrapped.unwrap();
@@ -184,7 +184,7 @@ impl List {
     }
 }
 
-impl Drop for List {
+impl<T> Drop for List<T> {
     fn drop(&mut self) {
         while let Some(mut _node) = self.pop_node() {}
     }
@@ -200,7 +200,7 @@ mod tests {
 
     const VALS: [i32; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
-    fn get_list() -> List {
+    fn get_list() -> List<i32> {
         let mut list = List::new();
         VALS.iter().for_each(|&val| list.push(val));
         list
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn create_list() {
-        let _list = List::new();
+        let _list: List<i32> = List::new();
     }
     #[test]
     fn push_list() {
@@ -264,7 +264,7 @@ mod tests {
     }
     #[test]
     fn test_empty() {
-        let list = List::new();
+        let list: List<i32> = List::new();
         assert!(
             list.is_empty(),
             "NEW LIST SHOULD BE RETURN WHEN CALLING IS_EMPTY. LIST {list:?}"

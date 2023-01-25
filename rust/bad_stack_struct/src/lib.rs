@@ -108,15 +108,10 @@ impl<T> List<T> {
         len
     }
     pub fn pop(&mut self) -> Option<T> {
-        self.next
-            .is_some()
-            .then(|| match core::mem::take(&mut self.next) {
-                Some(mut node) => {
-                    self.next = core::mem::take(&mut node.next);
-                    node.value
-                }
-                None => unreachable!(),
-            })
+        self.next.take().map(|node| {
+            self.next = node.next;
+            node.value
+        })
     }
     pub fn rpop(&mut self) -> Option<T> {
         self.next.is_some().then(|| {

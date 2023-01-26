@@ -397,6 +397,8 @@ mod tests {
     fn iter() {
         let list = get_list();
         let mut list_owned_iter = list.into_iter();
+        // Cheat and force use a mutable reference instead of the actual variable. This means that
+        //  iterator is not consumed in the loop chain.
         for (item, &value) in (&mut list_owned_iter).zip(VALS.iter().rev()) {
             println!("VAL: {item} ");
             assert_eq!(item, value);

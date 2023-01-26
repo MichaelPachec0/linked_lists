@@ -181,16 +181,10 @@ impl<T> List<T> {
         })
     }
     pub fn peek(&self) -> Option<&T> {
-        match self.next.as_ref() {
-            Some(t) => Some(&t.value),
-            None => None,
-        }
+        self.next.as_ref().map(|t| &t.value)
     }
     pub fn mut_peek(&mut self) -> Option<&mut T> {
-        match self.next.as_mut() {
-            Some(t) => Some(&mut t.value),
-            None => None,
-        }
+        self.next.as_mut().map(|t| &mut t.value)
     }
 }
 

@@ -58,7 +58,10 @@ impl<T> List<T> {
         }
     }
     #[must_use]
-    pub fn search(&self, value: T) -> Option<usize> where T: PartialOrd {
+    pub fn search(&self, value: T) -> Option<usize>
+    where
+        T: PartialOrd,
+    {
         let mut location = 0;
         if let Some(mut prev) = self.next.as_ref() {
             'looper: loop {
@@ -176,6 +179,18 @@ impl<T> List<T> {
             self.next = core::mem::take(&mut node.next);
             node
         })
+    }
+    pub fn peek(&self) -> Option<&T> {
+        match self.next.as_ref() {
+            Some(t) => Some(&t.value),
+            None => None,
+        }
+    }
+    pub fn mut_peek(&mut self) -> Option<&mut T> {
+        match self.next.as_mut() {
+            Some(t) => Some(&mut t.value),
+            None => None,
+        }
     }
 }
 
@@ -339,5 +354,34 @@ mod tests {
         // Check exhaustion
         assert_eq!(list.pop(), Some(1));
         assert_eq!(list.pop(), None);
+    }
+    #[test]
+    fn peek() {
+        let list = get_list();
+        let peeked = list.peek();
+        assert_eq!(
+            Some(&8),
+            peeked,
+            "PEEK DOES NOT WORK GOT VALUE: {peeked:?} WITH LIST {list:?}"
+        );
+    }
+    #[test]
+    fn mut_peek() {
+        let mut list = get_list();
+        {
+            // Make sure that we get a mut borrow that only lasts until reassignment
+            let peek = list.mut_peek();
+            assert_eq!(Some(&mut 8), peek, "INITIAL PEEK DOES NOT WORK!");
+            if let Some(num) = peek {
+                *num = 9;
+            }
+        }
+        let peek = list.mut_peek();
+        let mut expected = 9;
+        let expected = Some(&mut expected);
+        assert_eq!(
+            expected, peek,
+            "MUTABLE PEEK DID NOT WORK, VALUE: {peek:?} EXPECTED {expected:?}"
+        );
     }
 }

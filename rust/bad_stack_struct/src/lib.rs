@@ -186,6 +186,9 @@ impl<T> List<T> {
     pub fn mut_peek(&mut self) -> Option<&mut T> {
         self.next.as_mut().map(|t| &mut t.value)
     }
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
 }
 
 impl<T> Drop for List<T> {
@@ -194,15 +197,17 @@ impl<T> Drop for List<T> {
     }
 }
 
-impl<T> Iterator for List<T> {
+pub struct IntoIter<T>(List<T>);
+
+impl<T> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.pop()
+        self.0.pop()
     }
 }
 
-pub struct Iter<T>(List<T>);
+
 
 #[cfg(test)]
 mod tests {
@@ -391,9 +396,12 @@ mod tests {
     #[test]
     fn iter() {
         let list = get_list();
-        for ((i, item), &value) in list.into_iter().enumerate().zip(VALS.iter().rev()) {
-            println!("INDEX: {i} VAL: {item} ");
+        let mut list_owned_iter = list.into_iter();
+        for (item, &value) in (&mut list_owned_iter).zip(VALS.iter().rev()) {
+            println!("VAL: {item} ");
             assert_eq!(item, value);
         }
+        // Make sure the iterator is empty, since there should not be any values in the
+        assert_eq!(list_owned_iter.next(), None);
     }
 }

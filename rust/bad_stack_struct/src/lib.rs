@@ -194,6 +194,16 @@ impl<T> Drop for List<T> {
     }
 }
 
+impl<T> Iterator for List<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.pop()
+    }
+}
+
+pub struct Iter<T>(List<T>);
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::use_debug)]
@@ -377,5 +387,13 @@ mod tests {
             expected, peek,
             "MUTABLE PEEK DID NOT WORK, VALUE: {peek:?} EXPECTED {expected:?}"
         );
+    }
+    #[test]
+    fn iter() {
+        let list = get_list();
+        for ((i, item), &value) in list.into_iter().enumerate().zip(VALS.iter().rev()) {
+            println!("INDEX: {i} VAL: {item} ");
+            assert_eq!(item, value);
+        }
     }
 }

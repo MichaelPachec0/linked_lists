@@ -189,6 +189,16 @@ impl<T> List<T> {
     pub fn into_iter(self) -> IntoIter<T> {
         IntoIter(self)
     }
+    pub fn iter<'a, 'b>(&'a self) -> Iter<'a, 'b, T>
+    where
+        'a: 'b,
+    {
+        Iter {
+            list: self,
+            current: None,
+            index: 0,
+        }
+    }
 }
 
 impl<T> Drop for List<T> {
@@ -207,7 +217,34 @@ impl<T> Iterator for IntoIter<T> {
     }
 }
 
+pub struct Iter<'a, 'b, T> {
+    list: &'a List<T>,
+    current: Option<&'b Box<Node<T>>>,
+    index: usize,
+}
 
+impl<'a, 'b, T> Iterator for Iter<'a, 'b, T>
+where
+    'a: 'b,
+{
+    type Item = &'b T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current = if self.index == 0 {
+            self.list.next.as_ref()
+        } else {
+            match self.current {
+                Some(t) => t.next.as_ref(),
+                None => None,
+            }
+        };
+        self.index += 1;
+        match self.current {
+            Some(t) => Some(t.get_value()),
+            None => None,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -394,7 +431,7 @@ mod tests {
         );
     }
     #[test]
-    fn iter() {
+    fn into_iter() {
         let list = get_list();
         let mut list_owned_iter = list.into_iter();
         // Cheat and force use a mutable reference instead of the actual variable. This means that
@@ -405,5 +442,17 @@ mod tests {
         }
         // Make sure the iterator is empty, since there should not be any values in the
         assert_eq!(list_owned_iter.next(), None);
+        let list = get_list();
+        let mut list_iter = list.iter();
+    }
+    #[test]
+    fn iter() {
+        let list = get_list();
+        for (i, value) in list.iter().enumerate() {
+            println!("INDEX: {i} VAL: {value}");
+        }
+        for (i, value) in list.iter().enumerate() {
+            println!("INDEX: {i} VAL: {value}");
+        }
     }
 }

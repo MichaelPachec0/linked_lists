@@ -22,6 +22,9 @@ impl<T> Node<T> {
     pub fn get_value(&self) -> &T {
         &self.value
     }
+    pub fn get_mut(&mut self) -> &mut T {
+        &mut self.value
+    }
     pub fn get_next(&mut self) -> Option<&mut Box<Node<T>>> {
         self.next.as_mut()
     }
@@ -199,6 +202,13 @@ impl<T> List<T> {
             index: 0,
         }
     }
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        IterMut {
+            list: self,
+            current: None,
+            index: 0,
+        }
+    }
 }
 
 impl<T> Drop for List<T> {
@@ -234,7 +244,7 @@ where
         self.current = if self.index == 0 {
             self.list.next.as_ref()
         } else {
-            self.current.and_then(| node | node.next.as_ref())
+            self.current.and_then(|node| node.next.as_ref())
         };
         self.index += 1;
         self.current.map(|node| node.get_value())
@@ -444,7 +454,10 @@ mod tests {
         let mut iter = list.iter();
         for ((i, &value), &check) in (&mut iter).enumerate().zip(VALS.iter().rev()) {
             println!("INDEX: {i} VAL: {value}");
-            assert_eq!(value, check, "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}");
+            assert_eq!(
+                value, check,
+                "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}"
+            );
         }
         // This should be none.
         assert_eq!(iter.next(), None);
@@ -452,7 +465,10 @@ mod tests {
         let mut new_iter = list.iter();
         for ((i, &value), &check) in (&mut new_iter).enumerate().zip(VALS.iter().rev()) {
             println!("INDEX: {i} VAL: {value}");
-            assert_eq!(value, check, "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}");
+            assert_eq!(
+                value, check,
+                "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}"
+            );
         }
         // This should also be none.
         assert_eq!(new_iter.next(), None);

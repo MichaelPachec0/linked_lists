@@ -251,6 +251,28 @@ where
     }
 }
 
+pub struct IterMut<'a, T:'a> {
+    list: &'a mut List<T>,
+    // keep a reference here, so that iter is O(n) as opposed to O(n^2)
+    current: Option<&'a mut Box<Node<T>>>,
+    index: usize,
+}
+
+impl<'a, T> Iterator for IterMut<'a, T>
+{
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current = if self.index == 0 {
+            self.list.next.as_mut()
+        } else {
+            self.current.and_then(|node| node.next.as_mut())
+        };
+        self.index += 1;
+        self.current.map(|node| node.get_mut())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::use_debug)]
@@ -472,5 +494,21 @@ mod tests {
         }
         // This should also be none.
         assert_eq!(new_iter.next(), None);
+    }
+    #[test]
+    fn iter_mut() {
+        let mut list = get_list();
+        let iter_mut = list.iter_mut();
+        let vals_iter = VALS.iter().rev();
+        for (i, value) in iter_mut.enumerate() {
+            let old_value = *value;
+            *value = old_value + 1;
+            println!("INDEX: {i} ORIGINAL VAL: {old_value} NEW VALUE {}", *value);
+
+        }
+        for ((i, &mut value), &check) in list.iter_mut().enumerate().zip(vals_iter) {
+            let expected = check+1;
+            assert_eq!(value, expected, "ITERATION {i} VALUE {value} DOES NOT EQUAL EXPECTED {expected}");
+        }
     }
 }

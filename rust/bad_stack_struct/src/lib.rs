@@ -450,7 +450,7 @@ mod tests {
         assert_eq!(iter.next(), None);
         // This should still work since list is not consumed
         let mut new_iter = list.iter();
-        for ((i, &value), &check) in (&mut new_iter).enumerate().zip(VALS.iter().rev())) {
+        for ((i, &value), &check) in (&mut new_iter).enumerate().zip(VALS.iter().rev()) {
             println!("INDEX: {i} VAL: {value}");
             assert_eq!(value, check, "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}");
         }

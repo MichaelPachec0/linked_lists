@@ -233,16 +233,10 @@ where
         self.current = if self.index == 0 {
             self.list.next.as_ref()
         } else {
-            match self.current {
-                Some(t) => t.next.as_ref(),
-                None => None,
-            }
+            self.current.and_then(| node | node.next.as_ref())
         };
         self.index += 1;
-        match self.current {
-            Some(t) => Some(t.get_value()),
-            None => None,
-        }
+        self.current.map(|node| node.get_value())
     }
 }
 
@@ -442,8 +436,6 @@ mod tests {
         }
         // Make sure the iterator is empty, since there should not be any values in the
         assert_eq!(list_owned_iter.next(), None);
-        let list = get_list();
-        let mut list_iter = list.iter();
     }
     #[test]
     fn iter() {

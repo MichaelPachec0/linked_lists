@@ -265,10 +265,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
                 let i = node.next.as_mut();
                 // unwrap the node from the box, and grab a mutable reference while we are at it.
                 // ie Option<&mut Box<Node<T>>> => Option<&mut Node<T>>
-                self.next = match i {
-                    Some(t) => Some(&mut **t),
-                    None => None,
-                };
+                self.next = i.map(|node| &mut **node);
                 // return the mutable reference to the value.
                 Some(&mut node.value)
             }

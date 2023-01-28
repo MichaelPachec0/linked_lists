@@ -230,7 +230,7 @@ impl<T> Iterator for IntoIter<T> {
 pub struct Iter<'a, 'b, T> {
     list: &'a List<T>,
     // keep a reference here, so that iter is O(n) as opposed to O(n^2)
-    current: Option<&'b Box<Node<T>>>,
+    current: Option<&'b Node<T>>,
     index: usize,
 }
 
@@ -242,12 +242,13 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.current = if self.index == 0 {
-            self.list.next.as_ref()
+            (self.list.next.as_ref()).map(convert::AsRef::as_ref)
         } else {
-            self.current.and_then(|node| node.next.as_ref())
+            self.current
+                .and_then(|node| (node.next.as_ref()).map(convert::AsRef::as_ref))
         };
-        self.index += 1;
-        self.current.map(|node| node.get_value())
+        self.index = self.index.checked_add(1)?;
+        self.current.map(Node::get_value)
     }
 }
 

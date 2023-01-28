@@ -470,27 +470,18 @@ mod tests {
     #[test]
     fn iter() {
         let list = get_list();
-        let mut iter = list.iter();
-        for ((i, &value), &check) in (&mut iter).enumerate().zip(VALS.iter().rev()) {
-            println!("INDEX: {i} VAL: {value}");
-            assert_eq!(
-                value, check,
-                "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}"
-            );
+        for _ in 0..2 {
+            let mut iter = list.iter();
+            for ((i, &value), &check) in (&mut iter).enumerate().zip(VALS.iter().rev()) {
+                println!("INDEX: {i} VAL: {value}");
+                assert_eq!(
+                    value, check,
+                    "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}"
+                );
+            }
+            // This should also be none.
+            assert_eq!(iter.next(), None);
         }
-        // This should be none.
-        assert_eq!(iter.next(), None);
-        // This should still work since list is not consumed
-        let mut new_iter = list.iter();
-        for ((i, &value), &check) in (&mut new_iter).enumerate().zip(VALS.iter().rev()) {
-            println!("INDEX: {i} VAL: {value}");
-            assert_eq!(
-                value, check,
-                "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}"
-            );
-        }
-        // This should also be none.
-        assert_eq!(new_iter.next(), None);
     }
     #[test]
     fn iter_mut() {

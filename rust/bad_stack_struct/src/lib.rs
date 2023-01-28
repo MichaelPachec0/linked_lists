@@ -259,18 +259,14 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.next.take() {
-            Some(node) => {
-                // get a mutable boxed reference to node next
-                let i = node.next.as_mut();
-                // unwrap the node from the box, and grab a mutable reference while we are at it.
-                // ie Option<&mut Box<Node<T>>> => Option<&mut Node<T>>
-                self.next = i.map(|node| &mut **node);
-                // return the mutable reference to the value.
-                Some(&mut node.value)
-            }
-            None => None,
-        }
+        self.next.take().map(|node| {
+            // get a mutable boxed reference to node next
+            let next = node.next.as_mut();
+            // unwrap the node from the box, and grab a mutable reference while we are at it.
+            // ie Option<&mut Box<Node<T>>> => Option<&mut Node<T>>
+            self.next = next.map(| node | &mut **node);
+            &mut node.value
+        })
     }
 }
 

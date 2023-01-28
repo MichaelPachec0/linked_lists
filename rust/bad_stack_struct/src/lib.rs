@@ -5,6 +5,8 @@
     clippy::missing_inline_in_public_items
 )]
 
+use core::convert;
+
 #[derive(Debug, Default)]
 pub struct Node<T> {
     value: T,
@@ -202,11 +204,9 @@ impl<T> List<T> {
             index: 0,
         }
     }
-    pub fn iter_mut(&mut self) -> IterMut<T> {
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T> {
         IterMut {
-            list: self,
-            current: None,
-            index: 0,
+            next: self.next.as_mut().map(convert::AsMut::as_mut),
         }
     }
 }
@@ -251,25 +251,32 @@ where
     }
 }
 
-pub struct IterMut<'a, T:'a> {
-    list: &'a mut List<T>,
-    // keep a reference here, so that iter is O(n) as opposed to O(n^2)
-    current: Option<&'a mut Box<Node<T>>>,
-    index: usize,
+pub struct IterMut<'a, T> {
+    next: Option<&'a mut Node<T>>,
 }
 
-impl<'a, T> Iterator for IterMut<'a, T>
-{
+impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.current = if self.index == 0 {
-            self.list.next.as_mut()
-        } else {
-            self.current.and_then(|node| node.next.as_mut())
-        };
-        self.index += 1;
-        self.current.map(|node| node.get_mut())
+        match self.next.take() {
+            Some(node) => {
+                // get a mutable boxed reference to node next
+                let i = match node.next {
+                    Some(ref mut t) => Some(t),
+                    None => None,
+                };
+                // unwrap the node from the box, and grab a mutable reference while we are at it.
+                // ie Option<&mut Box<Node<T>>> => Option<&mut Node<T>>
+                self.next = match i {
+                    Some(t) => Some(&mut **t),
+                    None => None,
+                };
+                // return the mutable reference to the value.
+                Some(&mut node.value)
+            }
+            None => None,
+        }
     }
 }
 
@@ -497,18 +504,23 @@ mod tests {
     }
     #[test]
     fn iter_mut() {
-        let mut list = get_list();
-        let iter_mut = list.iter_mut();
-        let vals_iter = VALS.iter().rev();
-        for (i, value) in iter_mut.enumerate() {
-            let old_value = *value;
-            *value = old_value + 1;
-            println!("INDEX: {i} ORIGINAL VAL: {old_value} NEW VALUE {}", *value);
-
-        }
-        for ((i, &mut value), &check) in list.iter_mut().enumerate().zip(vals_iter) {
-            let expected = check+1;
-            assert_eq!(value, expected, "ITERATION {i} VALUE {value} DOES NOT EQUAL EXPECTED {expected}");
+        for iteration in 1..10 {
+            let mut list = get_list();
+            let vals_iter = VALS.iter().rev();
+            let iter_mut = list.iter_mut();
+            for (i, value) in iter_mut.enumerate() {
+                let old_value = *value;
+                *value = old_value + iteration;
+                println!("INDEX: {i} ORIGINAL VAL: {old_value} NEW VALUE {}", *value);
+            }
+            // then use a read only iterator to check the values.
+            for ((i, &value), &check) in list.iter().enumerate().zip(vals_iter) {
+                let expected = check + iteration;
+                assert_eq!(
+                    value, expected,
+                    "ITERATION {i} VALUE {value} DOES NOT EQUAL EXPECTED {expected}"
+                );
+            }
         }
     }
 }

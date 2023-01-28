@@ -194,13 +194,9 @@ impl<T> List<T> {
     pub fn into_iter(self) -> IntoIter<T> {
         IntoIter(self)
     }
-    pub fn iter<'a, 'b>(&'a self) -> Iter<'a, 'b, T>
-    where
-        'a: 'b,
-    {
+    pub fn iter<'a>(&'a self) -> Iter<'a, T> {
         Iter {
-            list: self,
-            current: None,
+            next: self.next.as_ref().map(convert::AsRef::as_ref),
             index: 0,
         }
     }
@@ -227,27 +223,21 @@ impl<T> Iterator for IntoIter<T> {
     }
 }
 
-pub struct Iter<'a, 'b, T> {
-    list: &'a List<T>,
+pub struct Iter<'a, T> {
     // keep a reference here, so that iter is O(n) as opposed to O(n^2)
-    current: Option<&'b Box<Node<T>>>,
+    next: Option<&'a Node<T>>,
     index: usize,
 }
 
-impl<'a, 'b, T> Iterator for Iter<'a, 'b, T>
-where
-    'a: 'b,
-{
-    type Item = &'b T;
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.current = if self.index == 0 {
-            self.list.next.as_ref()
-        } else {
-            self.current.and_then(|node| node.next.as_ref())
-        };
-        self.index += 1;
-        self.current.map(|node| node.get_value())
+        self.next.take().and_then(|node| {
+            self.next = node.next.as_deref();
+            self.index = self.index.checked_add(1)?;
+            Some(&node.value)
+        })
     }
 }
 
@@ -469,27 +459,18 @@ mod tests {
     #[test]
     fn iter() {
         let list = get_list();
-        let mut iter = list.iter();
-        for ((i, &value), &check) in (&mut iter).enumerate().zip(VALS.iter().rev()) {
-            println!("INDEX: {i} VAL: {value}");
-            assert_eq!(
-                value, check,
-                "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}"
-            );
+        for _ in 0..2 {
+            let mut iter = list.iter();
+            for ((i, &value), &check) in (&mut iter).enumerate().zip(VALS.iter().rev()) {
+                println!("INDEX: {i} VAL: {value}");
+                assert_eq!(
+                    value, check,
+                    "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}"
+                );
+            }
+            // This should also be none.
+            assert_eq!(iter.next(), None);
         }
-        // This should be none.
-        assert_eq!(iter.next(), None);
-        // This should still work since list is not consumed
-        let mut new_iter = list.iter();
-        for ((i, &value), &check) in (&mut new_iter).enumerate().zip(VALS.iter().rev()) {
-            println!("INDEX: {i} VAL: {value}");
-            assert_eq!(
-                value, check,
-                "VALUE: {value} at INDEX: {i} DOES NOT EQUAL EXPECTED {check}"
-            );
-        }
-        // This should also be none.
-        assert_eq!(new_iter.next(), None);
     }
     #[test]
     fn iter_mut() {

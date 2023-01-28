@@ -89,13 +89,12 @@ impl<T> List<T> {
             .is_some()
             .then(|| {
                 let node = self.split_off_raw(at);
-                node.is_some().then(|| {
+                node.map(|node| {
                     let mut list = List::new();
-                    list.next = node;
+                    list.next = Some(node);
                     list
                 })
-            })
-            .unwrap_or_default()
+            })?
     }
     #[inline]
     #[must_use]
@@ -123,15 +122,10 @@ impl<T> List<T> {
     }
     pub fn rpop(&mut self) -> Option<T> {
         self.next.is_some().then(|| {
-            let last_loc = self.len();
-            let node = self.split_off_raw(last_loc - 1);
-            if let Some(node) = node {
-                node.value
-            } else {
-                // impossible to reach since is_some() makes sure we have a Some(T)
-                unreachable!()
-            }
-        })
+                let loc = self.len().checked_sub(1)?;
+                let unwrapped = self.split_off_raw(loc);
+                unwrapped.map(|node| node.value)
+            })?
     }
     fn split_off_raw(&mut self, at: usize) -> Option<Box<Node<T>>> {
         // loc variable needs to be 1, as we are already checking for where_at is at the 0th index.
@@ -372,7 +366,8 @@ mod tests {
             .map(|_| rng.gen::<i32>())
             .collect::<Vec<i32>>();
         for (i, &item) in vec.iter().enumerate() {
-            let loc = rng.gen_range::<usize, Range<usize>>(0..list.len() + 1);
+            let end = list.len() + 1;
+            let loc = rng.gen_range::<usize, Range<usize>>(0..end);
             println!("INSERTING {} of {} {item} AT {loc}", i + 1, vec.len());
             list.insert(item, loc);
             let actual_loc = match list.search(item) {

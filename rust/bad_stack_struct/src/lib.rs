@@ -203,6 +203,7 @@ impl<T> List<T> {
     pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T> {
         IterMut {
             next: self.next.as_mut().map(convert::AsMut::as_mut),
+            index: 0,
         }
     }
 }
@@ -243,18 +244,20 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
 pub struct IterMut<'a, T> {
     next: Option<&'a mut Node<T>>,
+    index: usize,
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.next.take().map(|node| {
+        self.next.take().and_then(|node| {
             // get a mutable boxed reference to node next
             // unwrap the node from the box, and grab a mutable reference while we are at it.
             // ie Option<&mut Box<Node<T>>> => Option<&mut Node<T>>
             self.next = node.next.as_deref_mut();
-            &mut node.value
+            self.index.checked_add(1)?;
+            Some(&mut node.value)
         })
     }
 }

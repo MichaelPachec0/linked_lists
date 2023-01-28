@@ -261,10 +261,9 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         self.next.take().map(|node| {
             // get a mutable boxed reference to node next
-            let next = node.next.as_mut();
             // unwrap the node from the box, and grab a mutable reference while we are at it.
             // ie Option<&mut Box<Node<T>>> => Option<&mut Node<T>>
-            self.next = next.map(| node | &mut **node);
+            self.next = node.next.as_deref_mut();
             &mut node.value
         })
     }

@@ -5,6 +5,8 @@
     clippy::missing_inline_in_public_items
 )]
 
+use core::convert;
+
 #[derive(Debug, Default)]
 pub struct Node<T> {
     value: T,
@@ -202,11 +204,9 @@ impl<T> List<T> {
             index: 0,
         }
     }
-    pub fn iter_mut(&mut self) -> IterMut<T> {
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T> {
         IterMut {
-            list: self,
-            current: None,
-            index: 0,
+            next: self.next.as_mut().map(convert::AsMut::as_mut),
         }
     }
 }
@@ -248,6 +248,24 @@ where
         };
         self.index += 1;
         self.current.map(|node| node.get_value())
+    }
+}
+
+pub struct IterMut<'a, T> {
+    next: Option<&'a mut Node<T>>,
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.take().map(|node| {
+            // get a mutable boxed reference to node next
+            // unwrap the node from the box, and grab a mutable reference while we are at it.
+            // ie Option<&mut Box<Node<T>>> => Option<&mut Node<T>>
+            self.next = node.next.as_deref_mut();
+            &mut node.value
+        })
     }
 }
 
@@ -472,5 +490,26 @@ mod tests {
         }
         // This should also be none.
         assert_eq!(new_iter.next(), None);
+    }
+    #[test]
+    fn iter_mut() {
+        for iteration in 1..10 {
+            let mut list = get_list();
+            let vals_iter = VALS.iter().rev();
+            let iter_mut = list.iter_mut();
+            for (i, value) in iter_mut.enumerate() {
+                let old_value = *value;
+                *value = old_value + iteration;
+                println!("INDEX: {i} ORIGINAL VAL: {old_value} NEW VALUE {}", *value);
+            }
+            // then use a read only iterator to check the values.
+            for ((i, &value), &check) in list.iter().enumerate().zip(vals_iter) {
+                let expected = check + iteration;
+                assert_eq!(
+                    value, expected,
+                    "ITERATION {i} VALUE {value} DOES NOT EQUAL EXPECTED {expected}"
+                );
+            }
+        }
     }
 }

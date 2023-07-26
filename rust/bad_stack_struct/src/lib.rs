@@ -42,6 +42,14 @@ impl<T> List<T> {
     pub fn new() -> Self {
         Self { next: None }
     }
+    pub fn from<A: Into<Vec<T>>>(values: A) -> Self {
+        fn inner<T>(vec: Vec<T>) -> List<T> {
+            let mut list = List::new();
+            vec.into_iter().for_each(|t| list.push(t));
+            list
+        }
+        inner(values.into())
+    }
     pub fn push(&mut self, value: T) {
         self.insert(value, 0);
     }
